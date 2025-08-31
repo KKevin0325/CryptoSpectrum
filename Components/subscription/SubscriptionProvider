@@ -1,0 +1,94 @@
+import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { UserSubscription } from "@/entities/UserSubscription";
+import { SubscriptionPlan } from "@/entities/SubscriptionPlan";
+import { User } from "@/entities/User";
+
+const SubscriptionContext = createContext();
+
+// Subscription state reducer for better state management
+const subscriptionReducer = (state, action) => {
+  switch (action.type) {
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload };
+    case 'SET_USER':
+      return { ...state, user: action.payload };
+    case 'SET_PLANS':
+      return { ...state, plans: action.payload };
+    case 'SET_SUBSCRIPTION':
+      return { ...state, currentSubscription: action.payload };
+    case 'SET_ERROR':
+      return { ...state, error: action.payload };
+    case 'SET_PROCESSING':
+      return { ...state, isProcessing: action.payload };
+    case 'CLEAR_ERROR':
+      return { ...state, error: null };
+    default:
+      return state;
+  }
+};
+
+const initialState = {
+  user: null,
+  plans: [],
+  currentSubscription: null,
+  isLoading: true,
+  isProcessing: false,
+  error: null
+};
+
+export function SubscriptionProvider({ children }) {
+  const [state, dispatch] = useReducer(subscriptionReducer, initialState);
+
+  useEffect(() => {
+    initializeSubscription();
+  }, []);
+
+  const initializeSubscription = async () => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
+
+      const [userData, plansData] = await Promise.all([
+        User.me(),
+        SubscriptionPlan.list()
+      ]);
+      
+      dispatch({ type: 'SET_USER', payload: userData });
+      dispatch({ type: 'SET_PLANS', payload: plansData });
+
+      // Get user's current subscription
+      const subscriptions = await UserSubscription.filter({ user_id: userData.id });
+      if (subscriptions.length > 0) {
+        dispatch({ type: 'SET_SUBSCRIPTION', payload: subscriptions[0] });
+      }
+    } catch (error) {
+      console.error("Error initializing subscription:", error);
+      dispatch({ type: 'SET_ERROR', payload: "Failed to load subscription data" });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  const purchaseSubscription = async (plan, billingCycle) => {
+    try {
+      dispatch({ type: 'SET_PROCESSING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
+
+      // iOS App Store integration point
+      // This is where you'd integrate with Apple's StoreKit or RevenueCat iOS SDK
+      if (window.webkit?.messageHandlers?.appStore) {
+        // Send message to iOS app to handle purchase
+        const purchaseData = {
+          productId: billingCycle === 'yearly' ? plan.stripe_price_id_yearly : plan.stripe_price_id_monthly,
+          planName: plan.name,
+          billingCycle: billingCycle
+        };
+        
+        window.webkit.messageHandlers.appStore.postMessage({
+          action: 'purchaseSubscription',
+          data: purchaseData
+        });
+        
+        // Wait for iOS callback (handled in window.onAppStorePurchaseComplete)
+        return;
+ 

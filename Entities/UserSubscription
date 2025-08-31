@@ -1,0 +1,49 @@
+{
+  "name": "UserSubscription",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to user"
+    },
+    "plan_name": {
+      "type": "string",
+      "description": "Current subscription plan"
+    },
+    "billing_cycle": {
+      "type": "string",
+      "enum": [
+        "monthly",
+        "yearly"
+      ],
+      "default": "monthly"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "cancelled",
+        "expired",
+        "trial",
+        "past_due"
+      ],
+      "default": "trial"
+    },
+    "current_period_start": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "current_period_end": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "cancel_at_period_end": {
+      "type": "boolean",
+      "default": false
+    },
+    "usage_stats": {
+      "type": "object",
+      "properties": {
+        "reports_generated_this_month": {
+          "type": "number"
+ 

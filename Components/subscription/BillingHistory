@@ -1,0 +1,94 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Receipt, Download, Calendar } from "lucide-react";
+import { format } from "date-fns";
+
+export default function BillingHistory() {
+  // Mock billing history - in real app this would come from RevenueCat/Stripe
+  const billingHistory = [
+    {
+      id: "inv_001",
+      date: "2024-01-01T00:00:00Z",
+      amount: 99,
+      plan: "Pro Plan",
+      status: "paid",
+      invoice_url: "#"
+    },
+    {
+      id: "inv_002", 
+      date: "2023-12-01T00:00:00Z",
+      amount: 99,
+      plan: "Pro Plan", 
+      status: "paid",
+      invoice_url: "#"
+    },
+    {
+      id: "inv_003",
+      date: "2023-11-01T00:00:00Z",
+      amount: 29,
+      plan: "Basic Plan",
+      status: "paid", 
+      invoice_url: "#"
+    }
+  ];
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'paid': return 'bg-green-100 text-green-700';
+      case 'pending': return 'bg-yellow-100 text-yellow-700';
+      case 'failed': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  return (
+    <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Receipt className="w-5 h-5 text-blue-500" />
+          Billing History
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {billingHistory.map((invoice) => (
+            <div key={invoice.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-50/50 hover:bg-slate-50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100">
+                  <Calendar className="w-4 h-4 text-blue-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-slate-900">{invoice.plan}</div>
+                  <div className="text-sm text-slate-500">
+                    {format(new Date(invoice.date), 'MMM d, yyyy')}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className="font-semibold text-slate-900">${invoice.amount}</div>
+                  <Badge className={getStatusColor(invoice.status)}>
+                    {invoice.status}
+                  </Badge>
+                </div>
+                <Button variant="ghost" size="icon" className="hover:bg-slate-100">
+                  <Download className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+          
+          {billingHistory.length === 0 && (
+            <div className="text-center py-8">
+              <Receipt className="w-8 h-8 text-slate-400 mx-auto mb-3" />
+              <p className="text-slate-500">No billing history yet</p>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

@@ -1,0 +1,49 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle, RefreshCw, MessageCircle } from "lucide-react";
+
+export default function SubscriptionError({ error, onRetry, onClearError }) {
+  return (
+    <div className="max-w-2xl mx-auto">
+      <Alert variant="destructive" className="mb-6">
+        <AlertTriangle className="h-5 w-5" />
+        <AlertDescription className="font-medium">
+          {error}
+        </AlertDescription>
+      </Alert>
+
+      <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60">
+        <CardHeader className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-8 h-8 text-red-500" />
+          </div>
+          <CardTitle className="text-xl text-slate-900">
+            Payment Issue
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center space-y-6">
+          <p className="text-slate-600">
+            We encountered an issue processing your subscription. This could be due to:
+          </p>
+          
+          <div className="text-left bg-slate-50 rounded-lg p-4 space-y-2">
+            <div className="text-sm text-slate-600">• Network connectivity issues</div>
+            <div className="text-sm text-slate-600">• Temporary service interruption</div>
+            <div className="text-sm text-slate-600">• Payment method declined</div>
+            <div className="text-sm text-slate-600">• App Store verification pending</div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button 
+              onClick={onRetry}
+              className="flex-1"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={onClearError}
+ 

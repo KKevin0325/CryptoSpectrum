@@ -1,0 +1,328 @@
+
+import React, { useState, useEffect } from "react";
+import { Web3Report } from "@/entities/Web3Report";
+import { Web3Asset } from "@/entities/Web3Asset";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, FileText, TrendingUp, Shield, Activity, AlertTriangle, Users, DollarSign, Lock } from "lucide-react"; // Added Lock icon
+import { InvokeLLM } from "@/integrations/Core";
+import { Link } from 'react-router-dom'; // Assuming react-router-dom is used for navigation
+
+import MetricCard from "../components/dashboard/MetricCard";
+import ComplianceOverview from "../components/dashboard/ComplianceOverview";
+import PriceChart from "../components/dashboard/PriceChart";
+
+// New imports for subscription
+import { useSubscription } from "../components/subscription/SubscriptionProvider";
+import SubscriptionGate from "../components/subscription/SubscriptionGate";
+
+export default function Dashboard() {
+  const [reports, setReports] = useState([]);
+  const [assets, setAssets] = useState([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showSubscriptionGate, setShowSubscriptionGate] = useState(false); // State to control SubscriptionGate visibility
+
+  // Consume subscription context
+  const { currentSubscription, plans } = useSubscription();
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    const [reportsData, assetsData] = await Promise.all([
+      Web3Report.list("-created_date", 10),
+      Web3Asset.list("-last_updated", 50)
+    ]);
+    setReports(reportsData);
+    setAssets(assetsData);
+  };
+
+  const generateIntelligenceReport = async () => {
+    // Determine current usage and limit from subscription context
+    const currentUsage = currentSubscription?.usage_stats?.reports_generated_this_month || 0;
+    // Assuming the first plan in 'plans' array dictates the reports_per_month limit for the current context.
+    // In a more robust system, you might look up the limit based on currentSubscription.plan_name.
+    const limit = plans?.[0]?.limits?.reports_per_month || 10; 
+    
+    // Check subscription limits before proceeding
+    if (currentUsage >= limit) {
+      setShowSubscriptionGate(true); // Show the subscription gate if limit is reached
+      return; // Stop function execution
+    }
+
+    setIsGenerating(true);
+    try {
+      const reportData = await InvokeLLM({
+        prompt: `Generate a comprehensive Web3 intelligence report covering:
+        1. Current market conditions and key price movements
+        2. Compliance and regulatory updates 
+        3. Technical analysis of major protocols
+        4. Risk assessment and recommendations
+        
+        Focus on actionable insights for institutional investors and compliance teams.
+        Include specific metrics and data points where possible.`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            summary: { type: "string" },
+            key_findings: { 
+              type: "array", 
+              items: { type: "string" } 
+            },
+            compliance_score: { type: "number" },
+            risk_level: { 
+              type: "string", 
+              enum: ["low", "medium", "high", "critical"] 
+            },
+            price_analysis: {
+              type: "object",
+              properties: {
+                current_price: { type: "number" },
+                price_change_24h: { type: "number" },
+                market_cap: { type: "number" },
+                volume_24h: { type: "number" }
+              }
+            },
+            technical_metrics: {
+              type: "object", 
+              properties: {
+                network_activity: { type: "number" },
+                transaction_count: { type: "number" },
+                active_addresses: { type: "number" },
+                tvl: { type: "number" }
+              }
+            },
+            data_sources: {
+              type: "array",
+              items: { type: "string" }
+            }
+          }
+        }
+      });
+
+      await Web3Report.create({
+        ...reportData,
+        category: "mixed",
+        status: "completed"
+      });
+
+      loadData(); // Reload data to show new report
+    } catch (error) {
+      console.error("Error generating report:", error);
+    }
+    setIsGenerating(false);
+  };
+
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    await loadData();
+    setIsRefreshing(false);
+  };
+
+  const recentReports = reports.slice(0, 3);
+  const totalMarketCap = assets.reduce((sum, asset) => sum + (asset.market_cap || 0), 0);
+  const avgComplianceScore = reports.length > 0 
+    ? reports.reduce((sum, report) => sum + (report.compliance_score || 0), 0) / reports.length 
+    : 0;
+
+  // Determine if user can generate reports for UI rendering
+  const currentUsage = currentSubscription?.usage_stats?.reports_generated_this_month || 0;
+  const reportLimit = plans?.[0]?.limits?.reports_per_month || 10;
+  const canGenerateReport = currentUsage < reportLimit;
+
+  return (
+    <div className="p-6 lg:p-8 space-y-8 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div>
+          <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-2">
+            Web3 Intelligence Dashboard
+          </h1>
+          <p className="text-slate-600 text-lg">
+            Real-time insights, compliance monitoring, and market analytics
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={refreshData}
+            disabled={isRefreshing}
+            className="bg-white/80 backdrop-blur-sm hover:bg-white border-slate-200/60"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          {canGenerateReport ? (
+            <Button
+              onClick={generateIntelligenceReport}
+              disabled={isGenerating}
+              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg"
+            >
+              <Activity className="w-4 h-4 mr-2" />
+              {isGenerating ? 'Generating...' : 'Generate Report'}
+            </Button>
+          ) : (
+            <div className="relative">
+              <Button
+                onClick={() => setShowSubscriptionGate(true)} // Show gate on click even if disabled
+                disabled={isGenerating} // Keep disabled logic for generating state, though it's already limited
+                className="bg-gray-400 cursor-not-allowed" // Visually indicate it's disabled
+              >
+                <Lock className="w-4 h-4 mr-2" />
+                Generate Report
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Subscription Gate for Report Generation */}
+      {showSubscriptionGate && (
+        <SubscriptionGate
+          feature="Report Generation" // Feature name for the gate
+          requiredPlan="Pro" // Example required plan name, adjust as needed
+          currentPlan={currentSubscription?.plan_name}
+          usageCount={currentUsage}
+          usageLimit={reportLimit}
+          onClose={() => setShowSubscriptionGate(false)} // Callback to close the gate
+        />
+      )}
+
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          title="Total Reports"
+          value={reports.length}
+          change={12.5}
+          icon={FileText}
+          color="blue"
+          description="Generated this month"
+        />
+        <MetricCard
+          title="Market Cap Tracked"
+          value={`$${(totalMarketCap / 1e9).toFixed(1)}B`}
+          change={8.3}
+          icon={DollarSign}
+          color="green"
+          description="Across monitored assets"
+        />
+        <MetricCard
+          title="Compliance Score"
+          value={`${avgComplianceScore.toFixed(0)}/100`}
+          change={2.1}
+          icon={Shield}
+          color="purple"
+          description="Average risk assessment"
+        />
+        <MetricCard
+          title="Active Assets"
+          value={assets.length}
+          change={5.7}
+          icon={TrendingUp}
+          color="orange"
+          description="Under monitoring"
+        />
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Charts Section */}
+        <div className="lg:col-span-2 space-y-6">
+          <PriceChart />
+          
+          {/* Recent Reports */}
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-slate-900">Latest Intelligence Reports</h3>
+              <Link to="/reports"> {/* Assumes "/reports" is the route for all reports */}
+                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
+                  View All Reports →
+                </Button>
+              </Link>
+            </div>
+            
+            <div className="space-y-4">
+              {recentReports.length > 0 ? (
+                recentReports.map((report) => (
+                  <div key={report.id} className="p-4 rounded-xl bg-gradient-to-r from-slate-50 to-blue-50 border border-slate-200/50 hover:shadow-md transition-all duration-300">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-slate-900 mb-1">{report.title}</h4>
+                        <p className="text-sm text-slate-600 mb-2">{report.summary}</p>
+                        <div className="flex items-center gap-3">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            report.risk_level === 'low' ? 'bg-green-100 text-green-700' :
+                            report.risk_level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                            report.risk_level === 'high' ? 'bg-orange-100 text-orange-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {report.risk_level} risk
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            Score: {report.compliance_score || 'N/A'}/100
+                          </span>
+                        </div>
+                      </div>
+                      <div className={`p-2 rounded-lg ${
+                        report.category === 'compliance' ? 'bg-purple-100 text-purple-600' :
+                        report.category === 'finance' ? 'bg-green-100 text-green-600' :
+                        report.category === 'technical' ? 'bg-blue-100 text-blue-600' :
+                        'bg-slate-100 text-slate-600'
+                      }`}>
+                        <FileText className="w-5 h-5" />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <AlertTriangle className="w-8 h-8 text-slate-400 mx-auto mb-3" />
+                  <p className="text-slate-500">No reports generated yet</p>
+                  <p className="text-sm text-slate-400">Click "Generate Report" to create your first intelligence report</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          <ComplianceOverview reports={reports} />
+          
+          {/* Quick Actions */}
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 p-6 shadow-lg">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">Quick Actions</h3>
+            <div className="space-y-3">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start bg-blue-50/50 hover:bg-blue-50 border-blue-200/50 text-blue-700"
+                onClick={canGenerateReport ? generateIntelligenceReport : () => setShowSubscriptionGate(true)} // Conditional onClick
+                disabled={isGenerating || !canGenerateReport} // Disable if generating or limit reached
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                {canGenerateReport ? 'Generate New Report' : `Reports Used (${currentUsage}/${reportLimit})`}
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start bg-green-50/50 hover:bg-green-50 border-green-200/50 text-green-700"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Run Compliance Check
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start bg-purple-50/50 hover:bg-purple-50 border-purple-200/50 text-purple-700"
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Analyze Market Trends
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

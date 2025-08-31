@@ -1,0 +1,49 @@
+// Subscription utility functions for maintainable code
+export const SubscriptionHelpers = {
+  // Check if user has access to a feature
+  hasFeatureAccess: (subscription, feature, currentUsage = 0) => {
+    if (!subscription || subscription.status !== 'active') {
+      return subscription?.status === 'trial';
+    }
+
+    const plan = subscription.plan_name?.toLowerCase();
+    
+    switch (feature) {
+      case 'unlimited_reports':
+        return plan === 'pro' || plan === 'enterprise';
+      case 'advanced_compliance':
+        return plan === 'pro' || plan === 'enterprise';
+      case 'api_access':
+        return plan === 'pro' || plan === 'enterprise';
+      case 'team_collaboration':
+        return plan === 'enterprise';
+      case 'custom_integrations':
+        return plan === 'enterprise';
+      default:
+        return true;
+    }
+  },
+
+  // Get usage limits for current plan
+  getUsageLimits: (planName) => {
+    const limits = {
+      trial: {
+        reports_per_month: 3,
+        assets_tracked: 10,
+        data_retention_days: 7,
+        api_calls_per_day: 100
+      },
+      basic: {
+        reports_per_month: 10,
+        assets_tracked: 50,
+        data_retention_days: 30,
+        api_calls_per_day: 1000
+      },
+      pro: {
+        reports_per_month: 999999,
+        assets_tracked: 500,
+        data_retention_days: 90,
+        api_calls_per_day: 10000
+      },
+      enterprise: {
+ 

@@ -1,0 +1,49 @@
+{
+  "name": "Web3Report",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Report title"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "compliance",
+        "finance",
+        "technical",
+        "mixed"
+      ],
+      "description": "Report category"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "generating",
+        "completed",
+        "failed"
+      ],
+      "default": "completed",
+      "description": "Report generation status"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Executive summary"
+    },
+    "key_findings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key findings and insights"
+    },
+    "compliance_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Compliance risk score"
+    },
+    "price_analysis": {
+      "type": "object",
+      "properties": {
+ 

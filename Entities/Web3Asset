@@ -1,0 +1,49 @@
+{
+  "name": "Web3Asset",
+  "type": "object",
+  "properties": {
+    "symbol": {
+      "type": "string",
+      "description": "Asset symbol (e.g., BTC, ETH)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Full asset name"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "cryptocurrency",
+        "defi_token",
+        "nft",
+        "protocol_token",
+        "stablecoin"
+      ],
+      "description": "Asset category"
+    },
+    "current_price": {
+      "type": "number",
+      "description": "Current price in USD"
+    },
+    "price_change_24h": {
+      "type": "number",
+      "description": "24h price change percentage"
+    },
+    "market_cap": {
+      "type": "number",
+      "description": "Market capitalization"
+    },
+    "volume_24h": {
+      "type": "number",
+      "description": "24h trading volume"
+    },
+    "compliance_status": {
+      "type": "string",
+      "enum": [
+        "compliant",
+        "under_review",
+        "non_compliant",
+        "unknown"
+      ],
+      "description": "Regulatory compliance status"
+ 

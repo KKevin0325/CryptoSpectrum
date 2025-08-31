@@ -1,0 +1,49 @@
+{
+  "name": "SubscriptionPlan",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Plan name (e.g., Basic, Pro, Enterprise)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Plan description and features"
+    },
+    "price_monthly": {
+      "type": "number",
+      "description": "Monthly price in USD"
+    },
+    "price_yearly": {
+      "type": "number",
+      "description": "Yearly price in USD"
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of features included"
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "reports_per_month": {
+          "type": "number"
+        },
+        "assets_tracked": {
+          "type": "number"
+        },
+        "data_retention_days": {
+          "type": "number"
+        },
+        "api_calls_per_day": {
+          "type": "number"
+        }
+      }
+    },
+    "is_popular": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mark as most popular plan"
+ 

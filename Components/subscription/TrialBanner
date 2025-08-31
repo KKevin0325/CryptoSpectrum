@@ -1,0 +1,49 @@
+import React from 'react';
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Clock, Zap, ArrowRight } from "lucide-react";
+import { differenceInDays, format } from "date-fns";
+
+export default function TrialBanner({ subscription, onUpgrade }) {
+  if (!subscription || subscription.status !== 'trial') return null;
+
+  const trialEndDate = new Date(subscription.trial_end_date || Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const daysLeft = Math.max(0, differenceInDays(trialEndDate, new Date()));
+  const isExpiringSoon = daysLeft <= 3;
+
+  return (
+    <Card className={`border-2 ${isExpiringSoon ? 'border-red-200 bg-red-50/50' : 'border-blue-200 bg-blue-50/50'} shadow-lg`}>
+      <CardContent className="p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className={`p-2 rounded-lg ${isExpiringSoon ? 'bg-red-100' : 'bg-blue-100'}`}>
+              <Clock className={`w-5 h-5 ${isExpiringSoon ? 'text-red-600' : 'text-blue-600'}`} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-semibold text-slate-900">Free Trial Active</h3>
+                <Badge className={isExpiringSoon ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}>
+                  {daysLeft} day{daysLeft !== 1 ? 's' : ''} left
+                </Badge>
+              </div>
+              <p className="text-sm text-slate-600">
+                {isExpiringSoon 
+                  ? `Your trial expires on ${format(trialEndDate, 'MMM d, yyyy')}. Upgrade now to continue accessing all features.`
+                  : `Enjoy full access to Web3Intel until ${format(trialEndDate, 'MMM d, yyyy')}.`
+                }
+              </p>
+            </div>
+          </div>
+          
+          <Button 
+            onClick={onUpgrade}
+            className={`${isExpiringSoon 
+              ? 'bg-red-600 hover:bg-red-700' 
+              : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700'
+            } shadow-lg`}
+          >
+            <Zap className="w-4 h-4 mr-2" />
+            Upgrade Now
+            <ArrowRight className="w-4 h-4 ml-2" />
+ 

@@ -1,0 +1,157 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Check, Star, Zap, Loader2 } from "lucide-react";
+
+export default function PricingCard({ 
+  plan, 
+  billingCycle = "monthly", 
+  currentPlan = null,
+  onSelectPlan,
+  isLoading = false,
+  isProcessing = false 
+}) {
+  const price = billingCycle === "yearly" ? plan.price_yearly : plan.price_monthly;
+  const monthlyEquivalent = billingCycle === "yearly" ? (plan.price_yearly / 12) : plan.price_monthly;
+  const savings = billingCycle === "yearly" ? Math.round(((plan.price_monthly * 12) - plan.price_yearly) / (plan.price_monthly * 12) * 100) : 0;
+  
+  const isCurrentPlan = currentPlan === plan.name;
+  const isPro = plan.name.toLowerCase().includes('pro');
+  const isEnterprise = plan.name.toLowerCase().includes('enterprise');
+
+  // iOS-optimized pricing display
+  const handlePlanSelection = () => {
+    // Haptic feedback for iOS
+    if (window.navigator?.vibrate) {
+      window.navigator.vibrate(50);
+    }
+    onSelectPlan(plan, billingCycle);
+  };
+
+  return (
+    <Card className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl ${
+      plan.is_popular 
+        ? 'ring-2 ring-blue-500 shadow-lg scale-105' 
+        : isCurrentPlan 
+        ? 'ring-2 ring-green-500 bg-green-50/30' 
+        : 'hover:shadow-lg'
+    }`}>
+      {plan.is_popular && (
+        <div className="absolute top-0 left-0 right-0">
+          <div className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-center py-2 text-sm font-medium">
+            <Star className="w-4 h-4 inline mr-1" />
+            Most Popular
+          </div>
+        </div>
+      )}
+      
+      <CardHeader className={`text-center ${plan.is_popular ? 'pt-12' : 'pt-6'}`}>
+        <div className="space-y-2">
+          <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
+            {isPro && <Zap className="w-6 h-6 text-blue-500" />}
+            {plan.name}
+          </CardTitle>
+          <p className="text-slate-600 text-sm">{plan.description}</p>
+        </div>
+        
+        <div className="py-4">
+          <div className="text-4xl font-bold text-slate-900">
+            ${monthlyEquivalent.toFixed(0)}
+            <span className="text-lg font-normal text-slate-500">/mo</span>
+          </div>
+          {billingCycle === "yearly" && (
+            <div className="space-y-1">
+              <div className="text-sm text-slate-500">
+                Billed yearly: ${price}
+              </div>
+              {savings > 0 && (
+                <Badge className="bg-green-100 text-green-700">
+                  Save {savings}%
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-6">
+        <Button 
+          className={`w-full h-12 font-semibold text-base ${
+            plan.is_popular 
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg' 
+              : isCurrentPlan
+              ? 'bg-green-600 hover:bg-green-700'
+              : 'hover:shadow-md'
+          }`}
+          variant={plan.is_popular || isCurrentPlan ? "default" : "outline"}
+          onClick={handlePlanSelection}
+          disabled={isCurrentPlan || isLoading || isProcessing}
+        >
+          {isProcessing ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Processing...
+            </>
+          ) : isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Loading...
+            </>
+          ) : isCurrentPlan ? (
+            <>
+              <Check className="w-4 h-4 mr-2" />
+              Current Plan
+            </>
+          ) : (
+            `Choose ${plan.name}`
+          )}
+        </Button>
+
+        <div className="space-y-3">
+          <h4 className="font-semibold text-slate-900">Features included:</h4>
+          <ul className="space-y-2">
+            {plan.features?.map((feature, index) => (
+              <li key={index} className="flex items-start gap-2 text-sm">
+                <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {plan.limits && (
+          <div className="pt-4 border-t border-slate-200">
+            <h4 className="font-semibold text-slate-900 mb-3">Usage Limits:</h4>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {plan.limits.reports_per_month && (
+                <div className="bg-slate-50 rounded-lg p-2">
+                  <div className="font-medium text-slate-700">Reports</div>
+                  <div className="text-slate-500">{plan.limits.reports_per_month === 999999 ? 'Unlimited' : `${plan.limits.reports_per_month}/month`}</div>
+                </div>
+              )}
+              {plan.limits.assets_tracked && (
+                <div className="bg-slate-50 rounded-lg p-2">
+                  <div className="font-medium text-slate-700">Assets</div>
+                  <div className="text-slate-500">{plan.limits.assets_tracked === 999999 ? 'Unlimited' : plan.limits.assets_tracked}</div>
+                </div>
+              )}
+              {plan.limits.data_retention_days && (
+                <div className="bg-slate-50 rounded-lg p-2">
+                  <div className="font-medium text-slate-700">Data Retention</div>
+                  <div className="text-slate-500">{plan.limits.data_retention_days === 999999 ? 'Forever' : `${plan.limits.data_retention_days} days`}</div>
+                </div>
+              )}
+              {plan.limits.api_calls_per_day && (
+                <div className="bg-slate-50 rounded-lg p-2">
+                  <div className="font-medium text-slate-700">API Calls</div>
+                  <div className="text-slate-500">{plan.limits.api_calls_per_day === 100000 ? 'Unlimited' : `${plan.limits.api_calls_per_day}/day`}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

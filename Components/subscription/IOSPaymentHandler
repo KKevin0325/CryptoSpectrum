@@ -1,0 +1,49 @@
+
+import { useEffect } from 'react';
+
+// iOS Payment Handler Component
+// This component handles communication with the iOS app for in-app purchases
+export default function IOSPaymentHandler() {
+  useEffect(() => {
+    // Register global handlers for iOS communication
+    if (typeof window !== 'undefined') {
+      // Handle successful purchase from iOS
+      window.handleIOSPurchaseSuccess = (productId, transactionId) => {
+        console.log('iOS Purchase Success:', { productId, transactionId });
+        
+        // Update subscription status in database
+        // This would sync with your backend to verify the purchase with Apple
+        window.dispatchEvent(new CustomEvent('subscription-updated', {
+          detail: { success: true, productId, transactionId }
+        }));
+      };
+
+      // Handle failed purchase from iOS  
+      window.handleIOSPurchaseError = (error) => {
+        console.error('iOS Purchase Error:', error);
+        
+        window.dispatchEvent(new CustomEvent('subscription-error', {
+          detail: { error }
+        }));
+      };
+
+      // Handle restored purchases from iOS
+      window.handleIOSRestoreSuccess = (restoredProducts) => {
+        console.log('iOS Restore Success:', restoredProducts);
+        
+        window.dispatchEvent(new CustomEvent('subscription-restored', {
+          detail: { restoredProducts }
+        }));
+      };
+
+      // Handle subscription status changes from iOS
+      window.handleIOSSubscriptionStatusChange = (status, productId) => {
+        console.log('iOS Subscription Status Change:', { status, productId });
+        
+        window.dispatchEvent(new CustomEvent('subscription-status-changed', {
+          detail: { status, productId }
+        }));
+      };
+    }
+
+ 
